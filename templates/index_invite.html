@@ -1,0 +1,54 @@
+<html> 
+    <head>
+        <title>
+            ShopAssist
+        </title>
+        <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;400&display=swap" rel="stylesheet">
+    </head>
+    <body> 
+        <div class="outercontainer">
+            <div class="center">
+                <h1 id="titlestyle">
+                    ShopAssist
+                </h1>
+            </div>
+            <div class="conversationcontainer" id="chatcontainer">
+                {% for entry in name_xyz %}
+                <div class="{% if entry.bot %}bot{% else %}user{% endif %}"> 
+                    {% if entry.bot %}
+                    {{ entry.bot }}
+                    {% else %}
+                    {{ entry.user }}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <form action = "/invite" method="POST" class="center">
+                <input type ="text" name="user_input_message" id = "inputtextbox">
+                <input type="submit" value=" " id="submitbutton">
+            </form>
+
+            <form action="/end_conv" method="POST" class="center">
+                <button type="submit">END CONVERSATION</button>
+            </form>
+    </div>
+
+    <script>
+        // Scroll to the bottom of the chat container on page load and after a new message is sent
+        function scrollToBottom() {
+            var chatContainer = document.getElementById('chatcontainer');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    
+        window.onload = scrollToBottom;
+
+    </script>
+
+
+
+</body> 
+</html>
