@@ -22,8 +22,10 @@ conversation_bot = []
 conversation = initialize_conversation()
 introduction = get_chat_model_completions(conversation)
 conversation_bot.append({'bot':introduction})
+conversation.append({"role": "assistant", "content": introduction})
 top_3_laptops = None
 
+# print("\n\nConversation initialization :: ", conversation, "\n")
 
 @app.route("/")
 def default_func():
@@ -44,39 +46,49 @@ def end_conv():
 def invite():
     global conversation_bot, conversation, top_3_laptops, conversation_reco
     user_input = request.form["user_input_message"]
-    prompt = 'Remember your system message and that you are an intelligent laptop assistant. So, you only help with questions around laptop.'
+    # prompt = 'Remember your system message and that you are an intelligent laptop assistant. So, you only help with questions around laptop.'
     moderation = moderation_check(user_input)
     if moderation == 'Flagged':
         return redirect(url_for('end_conv'))
 
+    print("\n\ntop_3_laptops :: ", top_3_laptops, "\n") # debug comment
     if top_3_laptops is None:
-        conversation.append({"role": "user", "content": user_input + prompt})
+        # conversation.append({"role": "user", "content": user_input + prompt})
+        conversation.append({"role": "user", "content": user_input})
         conversation_bot.append({'user':user_input})
 
-        response_assistant = get_chat_model_completions(conversation)
+        print("\n\nConversation ::", conversation, "\n")
 
+        response_assistant = get_chat_model_completions(conversation)
+        # print("\n\nResponse assistant :: ", response_assistant, "\n") # Debug comment. Ask the model to return a json abject with all keys for all products
+        
         moderation = moderation_check(response_assistant)
         if moderation == 'Flagged':
             return redirect(url_for('end_conv'))
 
-        confirmation = intent_confirmation_layer(response_assistant)
+        confirmation = intent_confirmation_layer(response_assistant) #This layer can be used to solve multiple purposes
 
-        moderation = moderation_check(confirmation)
+        print("\n\nConfirmation :: ", confirmation, "\n") # Debug comment
+        
+        moderation = moderation_check(str(confirmation))
         if moderation == 'Flagged':
             return redirect(url_for('end_conv'))
 
-        if "No" in confirmation:
+        # if "No" in confirmation:
+        if confirmation.get("response_type") in ["missing_keys","None"]:
             conversation.append({"role": "assistant", "content": response_assistant})
             conversation_bot.append({'bot':response_assistant})
         else:
-            response = dictionary_present(response_assistant)
+            # response = dictionary_present(response_assistant) # This API call can be removed
 
-            moderation = moderation_check(response)
-            if moderation == 'Flagged':
-                return redirect(url_for('end_conv'))
+            print("\n\nDictionary present :: ", confirmation, "\n") # Debug comment
+
+            # moderation = moderation_check(confirmation)
+            # if moderation == 'Flagged':
+            #     return redirect(url_for('end_conv'))
 
             conversation_bot.append({'bot':"Thank you for providing all the information. Kindly wait, while I fetch the products: \n"})
-            top_3_laptops = compare_laptops_with_user(response)
+            top_3_laptops = compare_laptops_with_user(str(confirmation.get("response_body")))
 
             validated_reco = recommendation_validation(top_3_laptops)
 
@@ -90,7 +102,7 @@ def invite():
             if moderation == 'Flagged':
                 return redirect(url_for('end_conv'))
 
-            conversation_reco.append({"role": "user", "content": "This is my user profile" + response})
+            conversation_reco.append({"role": "user", "content": "This is my user profile" + str(confirmation.get("response_body"))})
 
             conversation_reco.append({"role": "assistant", "content": recommendation})
             conversation_bot.append({'bot':recommendation})

@@ -99,30 +99,24 @@ def moderation_check(user_input):
 
     
 def intent_confirmation_layer(response_assistant):
-    # print("\n\nHere is what intent function has received as input :: ", response_assistant, "\n")
     delimiter = "####"
     prompt = f"""
-    You are a senior evaluator and a python expert who has an eye for detail.
-    You are provided an input. You need to evaluate if the values for following keys can be inferred from the input: 'GPU intensity','Display quality','Portability','Multitasking',' Processing speed','Budget'
-    Next you need to evaluate if the inferred values for each of the keys are as explained in following points 1-2:
-        1. The values for all keys, except 'budget', should be 'low', 'medium', or 'high' based on the importance as stated by user
-        2. The value for the key 'budget' needs to contain a number with currency.
-    !Important(Do not assume values for keys yourself. Take decision for instructions provided later based on whether the input provided by the user has values for the all the keys available.)
+    You are a senior evaluator who has an eye for detail.
+    You are provided an input. You need to evaluate if the input has the following keys: 'GPU intensity','Display quality','Portability','Multitasking',' Processing speed','Budget'
+    Next you need to evaluate if the keys have the the values filled correctly.
+    The values for all keys, except 'budget', should be 'low', 'medium', or 'high' based on the importance as stated by user. The value for the key 'budget' needs to contain a number with currency.
+    Output a string 'Yes' if the input contains the dictionary with the values correctly filled for all keys.
+    Otherwise out the string 'No'.
 
     Here is the input: {response_assistant}
-    {delimiter}
-    Instructions to determine which function should be executed.
-    {delimiter}
-    Execute the function "extract_laptop_info_dict" if the input has values available for all the keys as per the expected values explained earlier.
-    If the input does not contain values for all the keys then execute "missing_keys" function.
+    Only output a one-word string - Yes/No.
     """
     prompt_list = [{"role": "system", "content": prompt}]
 
-    print("\n\nPrompt for intent function :: ",prompt, "\n")
     laptop_details_function = [
         {
             'name': 'extract_laptop_info_dict',
-            'description': 'Extract all the keys required to figure out the best laptop for the user. Call this only if input has expected values for all the keys available.',
+            'description': 'Get all the keys required to figure out the best laptop for the user',
             'parameters': {
                 'type': 'object',
                 'properties': {
@@ -139,7 +133,7 @@ def intent_confirmation_layer(response_assistant):
                         'description': 'high, medium, or low'
                     },
                     'Multitasking': {
-                        'type': 'string',
+                        'type': 'integer',
                         'description': 'high, medium, or low'
                     },
                     'Processing speed': {
@@ -147,23 +141,10 @@ def intent_confirmation_layer(response_assistant):
                         'description': 'high, medium, or low'
                     },
                     'Budget': {
-                        'type': 'number',
+                        'type': 'integer',
                         'description': 'Maximum amount the user is willing to spend for this laptop'
                     }
 
-                }
-            }
-        },
-        {
-            'name': 'missing_keys',
-            'description': 'If the value for even a single key is missing then this function should be executed and the only output for the value of "Status" is the "No"',
-            'parameters': {
-                'type': 'object',
-                'properties': {
-                    'Status': {
-                        'type': 'string',
-                        'description': 'No'
-                    }
                 }
             }
         }
@@ -180,18 +161,10 @@ def intent_confirmation_layer(response_assistant):
                                     # frequency_penalty=0,
                                     # presence_penalty=0
     )
-    
-    if dict(confirmation.choices[0].message).get('function_call'):
-        function_called = confirmation.choices[0].message.function_call.name
-        json_response = json.loads(confirmation.choices[0].message.function_call.arguments)
-        print("Function called:",function_called)
-        print("JSON response from intent / disctionary :: ",json_response, "\n")
-    else:
-        function_called = "None"
-        json_response = "None"
-    
-    return {"response_type":function_called,
-            "response_body":json_response}
+
+    json_response = json.loads(confirmation.choices[0].message.function_call.arguments)
+    print("JSON response from intent / disctionary :: ",json_response, "\n")
+    return json_response
 
 
 
@@ -258,7 +231,7 @@ def extract_dictionary_from_string(string):
 def compare_laptops_with_user(user_req_string):
     laptop_df= pd.read_csv('updated_laptop.csv')
     user_requirements = extract_dictionary_from_string(user_req_string)
-    budget = int(user_requirements.get('budget', '0'))
+    budget = int(user_requirements.get('budget', '0').replace(',', '').split()[0])
     #This line retrieves the value associated with the key 'budget' from the user_requirements dictionary.
     #If the key is not found, the default value '0' is used.
     #The value is then processed to remove commas, split it into a list of strings, and take the first element of the list.
