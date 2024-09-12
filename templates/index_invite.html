@@ -17,11 +17,11 @@
             </div>
             <div class="conversationcontainer" id="chatcontainer">
                 {% for entry in name_xyz %}
-                <div class="{% if entry.bot %}bot{% else %}user{% endif %}"> 
+                <div class="{% if entry.bot %}bot{% else %}user{% endif %}">
                     {% if entry.bot %}
-                    {{ entry.bot }}
+                    <pre>{{entry.bot.strip()}}</pre>
                     {% else %}
-                    {{ entry.user }}
+                    <pre>{{entry.user.strip()}}</pre>
                     {% endif %}
                 </div>
                 {% endfor %}

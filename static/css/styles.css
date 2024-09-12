@@ -69,19 +69,23 @@ button {
     float: right; /* Floats the user's messages to the right */
     clear: both; /* Positions the user's messages below any floated elements that came before it */
     max-width: 80%; /* Maximum width of the user's messages */
-    margin: 5px;
+    margin: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 
 .bot { 
     /* Same as above, but for the bot's messages */
     color: rgb(0, 0, 0);
     background-color: rgb(192, 230, 255);
-    padding: 50px;
+    padding: 8px;
     border-radius: 10px;
     float: left;
     clear: both;
     max-width: 80%;
-    margin: 15px;
+    margin: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 
 .center {
@@ -100,5 +104,13 @@ body {
     margin: 50px; /* Space around the outside of the <body> */
     font-size: 18px;
     font-weight: 400;
-    font-style: normal
+    font-style: normal;
+}
+
+pre {
+    overflow-wrap: break-word; /* or word-wrap: break-word; for older browsers */
+    white-space: pre-wrap; /* Ensures the text wraps and preserves spaces */
+    font-family: "Poppins", sans-serif; /* Font of the text. If 'Courier New' isn't available, the browser will try to use 'Courier'. If that's not available, it will use any monospace font. */
+    font-size: 15px;
+    margin:10px;
 }

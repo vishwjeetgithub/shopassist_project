@@ -52,7 +52,7 @@ def invite():
         return redirect(url_for('end_conv'))
 
     print("\n\ntop_3_laptops :: ", top_3_laptops, "\n") # debug comment
-    if top_3_laptops is None:
+    if (top_3_laptops is None) or (top_3_laptops.get("response_body")==[]):
         # conversation.append({"role": "user", "content": user_input + prompt})
         conversation.append({"role": "user", "content": user_input})
         conversation_bot.append({'user':user_input})
@@ -75,7 +75,7 @@ def invite():
             return redirect(url_for('end_conv'))
 
         # if "No" in confirmation:
-        if confirmation.get("response_type") in ["missing_keys","None"]:
+        if (confirmation.get("response_type") in ["missing_keys","None"]) or (len(confirmation.get("response_body"))<6):
             conversation.append({"role": "assistant", "content": response_assistant})
             conversation_bot.append({'bot':response_assistant})
         else:
@@ -88,27 +88,29 @@ def invite():
             #     return redirect(url_for('end_conv'))
 
             conversation_bot.append({'bot':"Thank you for providing all the information. Kindly wait, while I fetch the products: \n"})
-            top_3_laptops = compare_laptops_with_user(str(confirmation.get("response_body")))
+            top_3_laptops = compare_laptops_with_user(confirmation.get("response_body"))
+            if top_3_laptops.get("response_type")!="error":
+                validated_reco = recommendation_validation(top_3_laptops.get("response_body"))
 
-            validated_reco = recommendation_validation(top_3_laptops)
+                if len(validated_reco) == 0:
+                    conversation_bot.append({'bot':"Sorry, we do not have laptops that match your requirements. Connecting you to a human expert. Please end this conversation."})
 
-            if len(validated_reco) == 0:
-                conversation_bot.append({'bot':"Sorry, we do not have laptops that match your requirements. Connecting you to a human expert. Please end this conversation."})
+                conversation_reco = initialize_conv_reco(validated_reco)
+                recommendation = get_chat_model_completions(conversation_reco)
 
-            conversation_reco = initialize_conv_reco(validated_reco)
-            recommendation = get_chat_model_completions(conversation_reco)
+                moderation = moderation_check(recommendation)
+                if moderation == 'Flagged':
+                    return redirect(url_for('end_conv'))
 
-            moderation = moderation_check(recommendation)
-            if moderation == 'Flagged':
-                return redirect(url_for('end_conv'))
+                conversation_reco.append({"role": "user", "content": "This is my user profile" + str(confirmation.get("response_body"))})
 
-            conversation_reco.append({"role": "user", "content": "This is my user profile" + str(confirmation.get("response_body"))})
+                conversation_reco.append({"role": "assistant", "content": recommendation})
+                conversation_bot.append({'bot':recommendation})
 
-            conversation_reco.append({"role": "assistant", "content": recommendation})
-            conversation_bot.append({'bot':recommendation})
-
-            print(recommendation + '\n')
-
+                print(f"\n\nRecommendations are :: {recommendation}\n")
+            else:
+                print("\n\nTried to process dictionary for final recomm, but compare laptop returned error\n")
+                pass
     else:
         conversation_reco.append({"role": "user", "content": user_input})
         conversation_bot.append({'user':user_input})

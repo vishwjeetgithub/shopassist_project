@@ -49,7 +49,8 @@ def initialize_conversation():
     {delimiter}Thought 3: Check if you have correctly updated the values for the different keys in the python dictionary. 
     If you are not confident about any of the values, ask clarifying questions. {delimiter}
 
-    Follow the above chain of thoughts and only output the final updated python dictionary. \n
+    Follow the above chain of thoughts and only output the final updated python dictionary. Don't show it like a dictioanary but rather as a bulleted list of key-value pair.  \n
+    Ask the user to confirm. Ask the user if he wants to change anything.
 
 
     {delimiter} Here is a sample conversation between the user and assistant:
@@ -66,6 +67,7 @@ def initialize_conversation():
     {delimiter}
 
     Start with a short welcome message and encourage the user to share their requirements. Do not start with Assistant: "
+
     """
     conversation = [{"role": "system", "content": system_message}]
     return conversation
@@ -252,55 +254,90 @@ def extract_dictionary_from_string(string):
         dictionary = ast.literal_eval(dictionary_string)
     return dictionary
 
+def make_valid_dict(user_req_dict):
+    resp_type = ""
+    resp_body = {}
+
+    for index, (key, value) in enumerate(user_req_dict.items()):
+        key_temp = key.lower()
+        if key_temp != "budget":
+            try:
+                key_temp = key.lower()
+                value_temp = value.lower()
+                resp_body[key_temp] = value_temp
+            except:
+                resp_type = "invalid_dict"
+                resp_body = {"err_type":"unable to convert to lower"}
+        else:
+            resp_body[key_temp] = value
+    if resp_type != "invalid_dict":
+        resp_type = "valid_dict"
+    func_response = {"response_type":resp_type,
+                     "response_body": resp_body}
+    return func_response
 
 
-
-def compare_laptops_with_user(user_req_string):
+def compare_laptops_with_user(user_req_dict):
     laptop_df= pd.read_csv('updated_laptop.csv')
-    user_requirements = extract_dictionary_from_string(user_req_string)
-    budget = int(user_requirements.get('budget', '0'))
-    #This line retrieves the value associated with the key 'budget' from the user_requirements dictionary.
-    #If the key is not found, the default value '0' is used.
-    #The value is then processed to remove commas, split it into a list of strings, and take the first element of the list.
-    #Finally, the resulting value is converted to an integer and assigned to the variable budget.
+    user_requirements = make_valid_dict(user_req_dict)
+    print("\n\nUser requirements straight from the function :: ", user_requirements, "\n")
+    comp_laptopns_response = {}
+
+    if user_requirements.get("response_type") != "invalid_dict":
+        user_requirements = user_requirements.get("response_body")
+
+        print("\n\nUser requirements dictionary :: ", user_requirements, "\n")
+
+        budget = int(user_requirements.get('budget', '0'))
+        #This line retrieves the value associated with the key 'budget' from the user_requirements dictionary.
+        #If the key is not found, the default value '0' is used.
+        #The value is then processed to remove commas, split it into a list of strings, and take the first element of the list.
+        #Finally, the resulting value is converted to an integer and assigned to the variable budget.
 
 
-    filtered_laptops = laptop_df.copy()
-    filtered_laptops['Price'] = filtered_laptops['Price'].str.replace(',','').astype(int)
-    filtered_laptops = filtered_laptops[filtered_laptops['Price'] <= budget].copy()
-    #These lines create a copy of the laptop_df DataFrame and assign it to filtered_laptops.
-    #They then modify the 'Price' column in filtered_laptops by removing commas and converting the values to integers.
-    #Finally, they filter filtered_laptops to include only rows where the 'Price' is less than or equal to the budget.
+        filtered_laptops = laptop_df.copy()
+        filtered_laptops['Price'] = filtered_laptops['Price'].str.replace(',','').astype(int)
+        filtered_laptops = filtered_laptops[filtered_laptops['Price'] <= budget].copy()
+        #These lines create a copy of the laptop_df DataFrame and assign it to filtered_laptops.
+        #They then modify the 'Price' column in filtered_laptops by removing commas and converting the values to integers.
+        #Finally, they filter filtered_laptops to include only rows where the 'Price' is less than or equal to the budget.
 
-    mappings = {
-        'low': 0,
-        'medium': 1,
-        'high': 2
-    }
-    # Create 'Score' column in the DataFrame and initialize to 0
-    filtered_laptops['Score'] = 0
-    for index, row in filtered_laptops.iterrows():
-        user_product_match_str = row['laptop_feature']
-        laptop_values = extract_dictionary_from_string(user_product_match_str)
-        score = 0
+        mappings = {
+            'low': 0,
+            'medium': 1,
+            'high': 2
+        }
+        # Create 'Score' column in the DataFrame and initialize to 0
+        filtered_laptops['Score'] = 0
+        for index, row in filtered_laptops.iterrows():
+            user_product_match_str = row['laptop_feature']
+            print(f"\nProduct match from dataframe :: {user_product_match_str}")
+            laptop_values = extract_dictionary_from_string(user_product_match_str)
+            score = 0
 
-        for key, user_value in user_requirements.items():
-            if key.lower() == 'budget':
-                continue  # Skip budget comparison
-            laptop_value = laptop_values.get(key, None)
-            laptop_mapping = mappings.get(laptop_value.lower(), -1)
-            user_mapping = mappings.get(user_value.lower(), -1)
-            if laptop_mapping >= user_mapping:
-                ### If the laptop value is greater than or equal to the user value the score is incremented by 1
-                score += 1
+            for key, user_value in user_requirements.items():
+                if key.lower() == 'budget':
+                    continue  # Skip budget comparison
+                laptop_value = laptop_values.get(key, None)
+                laptop_mapping = mappings.get(laptop_value.lower(), -1)
+                user_mapping = mappings.get(user_value.lower(), -1)
+                if laptop_mapping >= user_mapping:
+                    ### If the laptop value is greater than or equal to the user value the score is incremented by 1
+                    score += 1
 
-        filtered_laptops.loc[index, 'Score'] = score
+            filtered_laptops.loc[index, 'Score'] = score
 
-    # Sort the laptops by score in descending order and return the top 5 products
-    top_laptops = filtered_laptops.drop('laptop_feature', axis=1)
-    top_laptops = top_laptops.sort_values('Score', ascending=False).head(3)
-
-    return top_laptops.to_json(orient='records')
+        # Sort the laptops by score in descending order and return the top 5 products
+        top_laptops = filtered_laptops.drop('laptop_feature', axis=1)
+        top_laptops = top_laptops.sort_values('Score', ascending=False).head(3)
+    
+    if user_requirements.get("response_type") != "invalid_dict":
+        comp_laptopns_response = {"response_type" : "top_3_laptops",
+                                  "response_body" : top_laptops.to_json(orient='records')
+                                  }
+    else:
+        comp_laptopns_response = {"response_type":"error"}
+    return comp_laptopns_response
 
 
 
@@ -326,7 +363,6 @@ def initialize_conv_reco(products):
     Start with a brief summary of each laptop in the following format, in decreasing order of price of laptops:
     1. <Laptop Name> : <Major specifications of the laptop>, <Price in Rs>
     2. <Laptop Name> : <Major specifications of the laptop>, <Price in Rs>
-
     """
     conversation = [{"role": "system", "content": system_message }]
     return conversation
