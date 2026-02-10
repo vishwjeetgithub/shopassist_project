@@ -9,7 +9,7 @@ import json
 from os import environ
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv() #load environment variables from a .env file into the os.environ dictionary within your Python application.
 
 
 

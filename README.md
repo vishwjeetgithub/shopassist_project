@@ -21,3 +21,4 @@ How to run:
     openai_key=sk-demoacct-your_key_here
 3. Navigate to the project root folder in anaconda prompt
 4. Execute "python app.py"
+5. This will start the flask app server

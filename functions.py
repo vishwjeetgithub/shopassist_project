@@ -105,7 +105,8 @@ def intent_confirmation_layer(response_assistant):
     delimiter = "####"
     prompt = f"""
     You are a senior evaluator and a python expert who has an eye for detail.
-    You are provided an input. You need to evaluate if the values for following keys can be inferred from the input: 'GPU intensity','Display quality','Portability','Multitasking',' Processing speed','Budget'
+    You are provided an input. You need to evaluate if the values for following keys can be inferred from the input: 'GPU intensity','Display quality','Portability','Multitasking',' Processing speed'
+    Don't assume budget on your own. Always ask for budget explicitely.
     Next you need to evaluate if the inferred values for each of the keys are as explained in following points 1-2:
         1. The values for all keys, except 'budget', should be 'low', 'medium', or 'high' based on the importance as stated by user
         2. The value for the key 'budget' needs to contain a number with currency.
@@ -197,7 +198,7 @@ def intent_confirmation_layer(response_assistant):
 
 
 
-
+# This is no more used. One hit to ChatGPT API is saved. The function call in intent_confirmation_layer now extracts the dictionary
 def dictionary_present(response):
     delimiter = "####"
     user_req = {'GPU intensity': 'high','Display quality': 'high','Portability': 'medium','Multitasking': 'high','Processing speed': 'high','Budget': '200000 INR'}
